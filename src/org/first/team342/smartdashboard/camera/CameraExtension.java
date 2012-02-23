@@ -30,10 +30,11 @@ public class CameraExtension extends WPICameraExtension {
     private final NumberProperty dialation;
     private final NumberProperty contours;
     private final NumberProperty polyPercent;
+    private final NumberProperty targetLeftside;
+    private final NumberProperty targetRightSide;
     private WPIBinaryImage outputImage;
     private WPIContour[] greenContours;
     private WPIPolygon tempPoly;
-    private WPIPolygon target;
     private WPIColor color;
 
     public CameraExtension() {
@@ -47,7 +48,9 @@ public class CameraExtension extends WPICameraExtension {
         this.erosion = new NumberProperty(this, "Erosion", 0);
         this.dialation = new NumberProperty(this, "dialation", 3);
         this.contours = new NumberProperty(this, "contours", 0);
-        this.polyPercent = new NumberProperty(this, "percent accuracy polygons", 0.8);
+        this.polyPercent = new NumberProperty(this, "percent accuracy polygons", 0.2);
+        this.targetLeftside = new NumberProperty(this, "pixles to left of center", 15);
+        this.targetRightSide = new NumberProperty(this, "pixles to right of center", 15);
         this.ipProperty.setDefault("10.3.42.11");
 
     }
@@ -83,22 +86,26 @@ public class CameraExtension extends WPICameraExtension {
 //            this.contors.setValue(true);
 //        }else{
 //            this.contors.setValue(false);
-//        }
+//        }       
         for (WPIContour contour : greenContours) {
-            
-            tempPoly = contour.approxPolygon(polyPercent.getValue().intValue());
-            rawImage.drawPolygon(tempPoly, WPIColor.RED, 2);
-            int contourX = tempPoly.getX();
-            int contourY = tempPoly.getY();
-            int halfWidth = tempPoly.getWidth() / 2 + contourX;
-            int halfHeight = tempPoly.getHeight() / 2 + contourY;
-            if ((halfWidth <= (rawImage.getWidth() / 2 + 15)) && (halfWidth >= (rawImage.getWidth() / 2 - 15))) {
-                this.color = WPIColor.RED;
-            }else{
-                color = WPIColor.CYAN;
+            if (contour.getHeight() >= 50 || contour.getWidth() >= 50) {
+
+
+                tempPoly = contour.approxPolygon(polyPercent.getValue().intValue());
+                rawImage.drawPolygon(tempPoly, WPIColor.RED, 2);
+                int contourX = tempPoly.getX();
+                int contourY = tempPoly.getY();
+                int halfWidth = tempPoly.getWidth() / 2 + contourX;
+                int halfHeight = tempPoly.getHeight() / 2 + contourY;
+                if ((halfWidth <= (rawImage.getWidth() / 2 + targetLeftside.getValue().intValue()))
+                        && (halfWidth >= (rawImage.getWidth() / 2 - targetRightSide.getValue().intValue()))) {
+                    this.color = WPIColor.RED;
+                } else {
+                    color = WPIColor.CYAN;
+                }
+                rawImage.drawLine(new WPIPoint(halfWidth, 0), new WPIPoint(halfWidth, rawImage.getHeight()), this.color, 2);
+                rawImage.drawLine(new WPIPoint(0, halfHeight), new WPIPoint(rawImage.getWidth(), halfHeight), this.color, 2);
             }
-            rawImage.drawLine(new WPIPoint(halfWidth, 0), new WPIPoint(halfWidth, rawImage.getWidth()), this.color, 2);
-            rawImage.drawLine(new WPIPoint(0, halfHeight), new WPIPoint(rawImage.getHeight(), halfHeight), this.color, 2);
         }
 
         return rawImage;
